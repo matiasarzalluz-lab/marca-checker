@@ -8,7 +8,7 @@ const MarcaChecker = () => {
   const [error, setError] = useState(null);
   
   // ⚠️ CAMBIAR ESTO: reemplaza con tu URL de Vercel después de deployar
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+  const API_URL = 'https://marca-checker.vercel.app';
 
   const CLASIFICACION_NIZA = {
     1: { clase: '01', nombre: 'Productos químicos, farmacéuticos', desc: 'Químicos industriales, fitosanitarios' },
