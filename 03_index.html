@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificador de Marcas INPI</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8f9fa; color: #333; }
+    #root { display: flex; flex-direction: column; min-height: 100vh; }
+    
+    .header { background: #0a2540; color: white; padding: 60px 20px; text-align: center; }
+    .header h1 { font-size: 36px; font-weight: 600; margin-bottom: 10px; }
+    .header p { font-size: 16px; opacity: 0.9; font-weight: 300; }
+    
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; flex: 1; }
+    
+    .section { margin: 60px 0; }
+    .section-number { font-size: 48px; font-weight: 300; color: #0a2540; opacity: 0.2; margin-bottom: 10px; }
+    .section-title { font-size: 28px; font-weight: 600; margin-bottom: 40px; color: #0a2540; }
+    
+    .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    
+    .search-label { font-size: 14px; font-weight: 600; color: #0a2540; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; display: block; }
+    .search-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+    .search-form input { padding: 14px 16px; border: 1px solid #ddd; border-radius: 4px; font-size: 15px; }
+    .search-form input:focus { outline: none; border-color: #0a2540; }
+    .search-form button { padding: 14px 28px; background: #0a2540; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .search-form button:hover:not(:disabled) { background: #082036; }
+    .search-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .results-grid { grid-template-columns: 1fr; } }
+    
+    .status-card h3 { font-size: 13px; font-weight: 700; color: #0a2540; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .status-badge { display: inline-block; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .status-badge.available { background: #d4edda; color: #155724; }
+    .status-badge.conflict { background: #f8d7da; color: #721c24; }
+    .status-info { font-size: 12px; color: #666; margin-top: 16px; line-height: 1.6; }
+    
+    .clases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-top: 20px; }
+    .clase-item { background: #f0f4ff; border: 1px solid #e0e8ff; padding: 12px; border-radius: 4px; text-align: center; font-size: 12px; font-weight: 600; color: #0a2540; }
+    
+    .conflictos-title h3 { font-size: 13px; font-weight: 700; color: #721c24; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .conflicto-item { background: #fff5f5; border-left: 3px solid #dc3545; padding: 12px; margin-bottom: 12px; border-radius: 2px; font-size: 12px; line-height: 1.6; }
+    .conflicto-item strong { color: #721c24; }
+    
+    .empty-state { text-align: center; padding: 80px 20px; color: #999; }
+    .error-msg { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; }
+    
+    .footer { background: #0a2540; color: white; padding: 40px 20px; margin-top: 60px; text-align: center; font-size: 12px; opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+      const [marca, setMarca] = useState('');
+      const [resultado, setResultado] = useState(null);
+      const [cargando, setCargando] = useState(false);
+      const [error, setError] = useState(null);
+
+      const buscar = async (e) => {
+        e.preventDefault();
+        if (!marca.trim()) return;
+
+        setCargando(true);
+        setError(null);
+
+        try {
+          const resp = await fetch('https://marca-checker.vercel.app/api/buscar-marca', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ marca: marca.trim() })
+          });
+
+          if (!resp.ok) throw new Error('Error en servidor');
+          const datos = await resp.json();
+          setResultado(datos);
+        } catch (err) {
+          setError('Error al consultar. Intenta de nuevo.');
+        } finally {
+          setCargando(false);
+        }
+      };
+
+      return (
+        <>
+          <div className="header">
+            <h1>Verificador de Marcas</h1>
+            <p>Consulta disponibilidad y clasificacion Niza ante INPI</p>
+          </div>
+
+          <div className="container">
+            <div className="section">
+              <div className="section-number">01</div>
+              <h2 className="section-title">Busqueda de Marca</h2>
+              
+              <div className="card">
+                <label className="search-label">Ingresa la marca a consultar</label>
+                <form className="search-form" onSubmit={buscar}>
+                  <input
+                    type="text"
+                    placeholder="Ej: Adidas, TecnoNet, CafePremium"
+                    value={marca}
+                    onChange={(e) => setMarca(e.target.value)}
+                    disabled={cargando}
+                  />
+                  <button disabled={cargando}>
+                    {cargando ? 'Consultando...' : 'Buscar'}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {error && <div className="error-msg">{error}</div>}
+
+            {!resultado && !cargando && !error && (
+              <div className="empty-state">
+                <p>Ingresa una marca para comenzar la consulta</p>
+              </div>
+            )}
+
+            {resultado && (
+              <>
+                <div className="section">
+                  <div className="section-number">02</div>
+                  <h2 className="section-title">Estado de la Marca</h2>
+                  
+                  <div className="results-grid">
+                    <div className="card status-card">
+                      <h3>Disponibilidad</h3>
+                      <div className={`status-badge ${resultado.disponible ? 'available' : 'conflict'}`}>
+                        {resultado.disponible ? 'DISPONIBLE' : 'CONFLICTOS'}
+                      </div>
+                      <div className="status-info">
+                        <strong>{resultado.marca}</strong><br/>
+                        Consulta: {resultado.fechaBusqueda}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="section">
+                  <div className="section-number">03</div>
+                  <h2 className="section-title">Clasificacion Niza</h2>
+                  
+                  <div className="card">
+                    <h3 style={{fontSize: '13px', fontWeight: '700', color: '#0a2540', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '20px'}}>Clases sugeridas</h3>
+                    <div className="clases-grid">
+                      {resultado.clasesRecomendadas.map((c) => (
+                        <div key={c} className="clase-item">Clase {c}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {resultado.conflictos.length > 0 && (
+                  <div className="section">
+                    <div className="section-number">04</div>
+                    <h2 className="section-title">Conflictos Detectados</h2>
+                    
+                    <div className="card conflictos-title">
+                      <h3>Marcas con similitud potencial</h3>
+                      {resultado.conflictos.map((c, i) => (
+                        <div key={i} className="conflicto-item">
+                          <strong>{c.marca}</strong><br/>
+                          {c.titular} | Estado: {c.estado} | Clase {c.clase}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="footer">
+            <p>Verificador de Marcas - Consulta informativa en base a datos de INPI</p>
+            <p style={{marginTop: '10px'}}>Para consultas definitivas: https://portaltramites.inpi.gob.ar</p>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
